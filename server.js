@@ -21,17 +21,23 @@ const getUser = (req) => {
   return data.filter((obj) => obj.id == paramId)
 }
 
-app.post('/users', (req, res) => {
-  let data = getStorage()
-  let user = {
-    id: data.length+1,
+const createUser = (req) => {
+  return {
+    id: req.body.id,
     name: req.body.name,
     email: req.body.email,
     state: req.body.state
   }
-  data.push(user)
+}
+
+app.post('/users', (req, res) => {
+  let data = getStorage()
+  let user = createUser(req)
+  let bodyId = req.body.id
+  let idCheck = data.filter((obj) => obj.id == bodyId)
+  idCheck.length === 0 ? data.push(user) : console.log('duplicate id');
   writeStorage(data)
-  res.json('User entered')
+  idCheck.length === 0 ? res.json('User entered') : res.json('Duplicate ID entered')
 })
 
 app.get('/users', (req, res) => {
@@ -39,22 +45,34 @@ app.get('/users', (req, res) => {
 })
 
 app.get('/users/:id', (req, res) => {
-  let data = getUser(req)
-  data.length > 0 ? res.json(data) : res.sendStatus(404)
+  res.json(getUser(req))
 })
 
 app.put('/users/:id', (req, res) => {
-  let data = getStorage()
+  let data = getStorage();
   let paramId = req.params.id
   let user = {
-    id: paramId,
+    id: req.body.id,
     name: req.body.name,
     email: req.body.email,
     state: req.body.state
   }
-  data[paramId-1] = user
+  let bodyId = req.body.id
+  let idCheck = data.filter((obj) => obj.id == bodyId)
+
+  if (idCheck.length === 0 || paramId == bodyId) {
+    data.map((obj) => {
+      if (obj.id == paramId) {
+        data[data.indexOf(obj)] = user
+      }
+    })
+  }
   writeStorage(data)
-  res.json('User updated')
+  if (idCheck.length === 0 || paramId == bodyId) {
+    res.json('User updated')
+  } else {
+    res.json('Duplicate ID entered')
+  }
 })
 
 app.delete('/users/:id', (req, res) => {
